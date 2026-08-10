@@ -1,0 +1,10 @@
+*.fasl
+*.abcl
+*.dx64fsl
+*.lx64fsl
+*.pfsl
+*.sparcf
+lib/*.jar
+.cl-repository/
+*.log
+.DS_Store
