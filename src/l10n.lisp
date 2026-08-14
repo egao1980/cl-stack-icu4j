@@ -8,7 +8,8 @@
                                     (error 'icu4j-error :message "ABCL required")))
                                names))))
   (stub make-collator collate sort-key
-        format-number format-percent format-currency format-date parse-number
+        format-number format-percent format-currency
+        format-date format-time format-datetime parse-number parse-date
         format-list format-relative-time
         locale-downcase locale-upcase locale-titlecase))
 
@@ -98,24 +99,59 @@
            (d (%jnew "java.util.Date" (round (%udate-ms value)))))
       (%jstr (%jcall "format" fmt d))))
 
-  (defun format-list (items &key locale (type :and))
+  (defun format-time (value &key locale style)
+    (let* ((fmt (%jstatic "getTimeInstance" "com.ibm.icu.text.DateFormat"
+                          (%date-style (or style :short)) (%locale locale)))
+           (d (%jnew "java.util.Date" (round (%udate-ms value)))))
+      (%jstr (%jcall "format" fmt d))))
+
+  (defun format-datetime (value &key locale date-style time-style)
+    (let* ((fmt (%jstatic "getDateTimeInstance" "com.ibm.icu.text.DateFormat"
+                          (%date-style (or date-style :short))
+                          (%date-style (or time-style :short))
+                          (%locale locale)))
+           (d (%jnew "java.util.Date" (round (%udate-ms value)))))
+      (%jstr (%jcall "format" fmt d))))
+
+  (defun parse-date (string &key locale style)
+    "Parse STRING → universal-time seconds (float). STYLE defaults :short."
+    (let* ((fmt (%jstatic "getDateInstance" "com.ibm.icu.text.DateFormat"
+                          (%date-style (or style :short)) (%locale locale)))
+           (d (%jcall "parse" fmt (string string))))
+      (/ (float (%jcall "getTime" d) 1d0) 1000d0)))
+
+  (defun format-list (items &key locale (type :and) (width :wide))
     (let* ((jtype (%jfield "com.ibm.icu.text.ListFormatter$Type"
                            (ecase (or type :and)
                              (:and "AND")
                              (:or "OR")
-                             (:unit "UNITS"))))
-           (width (%jfield "com.ibm.icu.text.ListFormatter$Width" "WIDE"))
+                             ((:unit :units) "UNITS"))))
+           (jwidth (%jfield "com.ibm.icu.text.ListFormatter$Width"
+                            (ecase (or width :wide)
+                              (:wide "WIDE")
+                              (:short "SHORT")
+                              (:narrow "NARROW"))))
            (fmt (%jstatic "getInstance" "com.ibm.icu.text.ListFormatter"
-                          (%locale locale) jtype width))
+                          (%locale locale) jtype jwidth))
            (al (%jnew "java.util.ArrayList")))
       (dolist (it items)
         (%jcall "add" al (string it)))
       (%jstr (%jcall "format" fmt al))))
 
-  (defun format-relative-time (value unit &key locale numeric)
-    "VALUE is signed offset; UNIT ∈ :second :minute :hour :day :week :month :year."
-    (let* ((fmt (%jstatic "getInstance" "com.ibm.icu.text.RelativeDateTimeFormatter"
-                          (%locale locale)))
+  (defun format-relative-time (value unit &key locale numeric (style :long))
+    "VALUE is signed offset; UNIT ∈ :second :minute :hour :day :week :month :year.
+STYLE ∈ :long :short :narrow."
+    (let* ((jstyle (%jfield "com.ibm.icu.text.RelativeDateTimeFormatter$Style"
+                            (ecase (or style :long)
+                              (:long "LONG")
+                              (:short "SHORT")
+                              (:narrow "NARROW"))))
+           (fmt (%jstatic "getInstance" "com.ibm.icu.text.RelativeDateTimeFormatter"
+                          (%ulocale locale)
+                          java:+null+
+                          jstyle
+                          (%jfield "com.ibm.icu.text.DisplayContext"
+                                   "CAPITALIZATION_NONE")))
            (u (%jfield "com.ibm.icu.text.RelativeDateTimeFormatter$RelativeDateTimeUnit"
                        (ecase unit
                          (:second "SECOND")

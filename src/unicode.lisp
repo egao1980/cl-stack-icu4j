@@ -12,8 +12,10 @@
         property-value-name normalize normalized-p quick-check
         has-boundary-before-p has-boundary-after-p raw-decomposition
         fold-case to-lower to-upper to-title
-        simple-fold-case simple-to-lower simple-to-upper
+        simple-fold-case simple-to-lower simple-to-upper simple-to-title
+        script-extensions
         idna-name-to-ascii idna-name-to-unicode
+        idna-label-to-ascii idna-label-to-unicode
         make-break-iterator break-set-text break-first break-last
         break-next break-previous break-current break-following
         break-preceding break-is-boundary-p
@@ -60,7 +62,7 @@
   (defun char-name (code-point &key (choice :unicode))
     (let ((s (ecase choice
                (:unicode (%jstatic "getName" "com.ibm.icu.lang.UCharacter" code-point))
-               (:extended (%jstatic "getName" "com.ibm.icu.lang.UCharacter" code-point))
+               (:extended (%jstatic "getExtendedName" "com.ibm.icu.lang.UCharacter" code-point))
                (:alias (%jstatic "getNameAlias" "com.ibm.icu.lang.UCharacter" code-point)))))
       (when s (%jstr s))))
 
@@ -133,6 +135,25 @@ Uses UCharacter.getUnicodeNumericValue (not Java-style getNumericValue)."
   (defun simple-to-upper (code-point)
     (%jstatic "toUpperCase" "com.ibm.icu.lang.UCharacter" code-point))
 
+  (defun simple-to-title (code-point)
+    (%jstatic "toTitleCase" "com.ibm.icu.lang.UCharacter" code-point))
+
+  (defun script-extensions (code-point)
+    "Return a list of script keywords for CODE-POINT (UScript.getScriptExtensions)."
+    (let* ((bitset (%jnew "java.util.BitSet"))
+           (_ (%jstatic "getScriptExtensions" "com.ibm.icu.lang.UScript" code-point bitset))
+           (out nil))
+      (declare (ignore _))
+      (do ((i (%jcall "nextSetBit" bitset 0)
+              (%jcall "nextSetBit" bitset (1+ i))))
+          ((minusp i))
+        (let ((name (%jstr (%jstatic "getName" "com.ibm.icu.lang.UScript" i))))
+          (when (and name (plusp (length name)))
+            (push (intern (string-upcase (substitute #\- #\_ name :test #'char=)) :keyword)
+                  out))))
+      (or (nreverse out)
+          (list (int-property code-point :script)))))
+
   (defun fold-case (string)
     (%jstr (%jstatic "foldCase" "com.ibm.icu.lang.UCharacter" (string string) t)))
 
@@ -177,7 +198,11 @@ Uses UCharacter.getUnicodeNumericValue (not Java-style getNumericValue)."
     (let* ((idna (%jstatic "getUTS46Instance" "com.ibm.icu.text.IDNA" (%idna-options options)))
            (sb (%jnew "java.lang.StringBuilder"))
            (info (%jnew "com.ibm.icu.text.IDNA$Info"))
-           (fn (ecase direction (:ascii "nameToASCII") (:unicode "nameToUnicode"))))
+           (fn (ecase direction
+                 (:name-ascii "nameToASCII")
+                 (:name-unicode "nameToUnicode")
+                 (:label-ascii "labelToASCII")
+                 (:label-unicode "labelToUnicode"))))
       (%jcall fn idna (string name) sb info)
       (when (%jcall "hasErrors" info)
         (error 'icu4j-error
@@ -185,10 +210,16 @@ Uses UCharacter.getUnicodeNumericValue (not Java-style getNumericValue)."
       (%jstr sb)))
 
   (defun idna-name-to-ascii (name &key options)
-    (%idna-convert name options :ascii))
+    (%idna-convert name options :name-ascii))
 
   (defun idna-name-to-unicode (name &key options)
-    (%idna-convert name options :unicode))
+    (%idna-convert name options :name-unicode))
+
+  (defun idna-label-to-ascii (label &key options)
+    (%idna-convert label options :label-ascii))
+
+  (defun idna-label-to-unicode (label &key options)
+    (%idna-convert label options :label-unicode))
 
   ;;; BreakIterator — returns the Java BreakIterator object as opaque raw.
 
@@ -245,11 +276,13 @@ Uses UCharacter.getUnicodeNumericValue (not Java-style getNumericValue)."
     (%jfield "com.ibm.icu.text.UnicodeSet$SpanCondition"
              (if contained "CONTAINED" "NOT_CONTAINED")))
 
-  (defun uset-span (set string &key (contained t))
-    (%jcall "span" set (string string) (%span-condition contained)))
+  (defun uset-span (set string &key (contained t) (start 0))
+    (%jcall "span" set (string string) start (%span-condition contained)))
 
-  (defun uset-span-back (set string &key (contained t))
-    (%jcall "spanBack" set (string string) (%span-condition contained)))
+  (defun uset-span-back (set string &key (contained t) (start nil))
+    (let* ((s (string string))
+           (from (or start (length s))))
+      (%jcall "spanBack" set s from (%span-condition contained))))
 
   (defun uset-size (set) (%jcall "size" set))
   (defun uset-empty-p (set) (%jcall "isEmpty" set))

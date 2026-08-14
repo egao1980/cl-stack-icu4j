@@ -30,8 +30,12 @@
    #:simple-fold-case
    #:simple-to-lower
    #:simple-to-upper
+   #:simple-to-title
+   #:script-extensions
    #:idna-name-to-ascii
    #:idna-name-to-unicode
+   #:idna-label-to-ascii
+   #:idna-label-to-unicode
    #:make-break-iterator
    #:break-set-text
    #:break-first
@@ -75,7 +79,10 @@
    #:format-percent
    #:format-currency
    #:format-date
+   #:format-time
+   #:format-datetime
    #:parse-number
+   #:parse-date
    #:format-list
    #:format-relative-time
    #:locale-downcase
