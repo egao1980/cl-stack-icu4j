@@ -8,7 +8,7 @@
                                     (error 'icu4j-error :message "ABCL required")))
                                names))))
   (stub make-collator collate sort-key
-        format-number format-percent format-currency format-date
+        format-number format-percent format-currency format-date parse-number
         format-list format-relative-time
         locale-downcase locale-upcase locale-titlecase))
 
@@ -69,6 +69,12 @@
       (%jcall "setCurrency" fmt cur)
       (%jstr (%jcall "format" fmt (float value 1d0)))))
 
+  (defun parse-number (string &key locale style)
+    (let* ((fmt (%jstatic "getInstance" "com.ibm.icu.text.NumberFormat"
+                          (%locale locale) (%number-style (or style :decimal))))
+           (n (%jcall "parse" fmt (string string))))
+      (float (%jcall "doubleValue" n) 1d0)))
+
   (defun %date-style (style)
     (%jfield "com.ibm.icu.text.DateFormat"
              (ecase (or style :short)
@@ -92,8 +98,15 @@
            (d (%jnew "java.util.Date" (round (%udate-ms value)))))
       (%jstr (%jcall "format" fmt d))))
 
-  (defun format-list (items &key locale)
-    (let* ((fmt (%jstatic "getInstance" "com.ibm.icu.text.ListFormatter" (%locale locale)))
+  (defun format-list (items &key locale (type :and))
+    (let* ((jtype (%jfield "com.ibm.icu.text.ListFormatter$Type"
+                           (ecase (or type :and)
+                             (:and "AND")
+                             (:or "OR")
+                             (:unit "UNITS"))))
+           (width (%jfield "com.ibm.icu.text.ListFormatter$Width" "WIDE"))
+           (fmt (%jstatic "getInstance" "com.ibm.icu.text.ListFormatter"
+                          (%locale locale) jtype width))
            (al (%jnew "java.util.ArrayList")))
       (dolist (it items)
         (%jcall "add" al (string it)))

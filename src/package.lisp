@@ -75,6 +75,7 @@
    #:format-percent
    #:format-currency
    #:format-date
+   #:parse-number
    #:format-list
    #:format-relative-time
    #:locale-downcase
