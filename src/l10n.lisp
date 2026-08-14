@@ -53,22 +53,33 @@
                (:currency-standard "STANDARDCURRENCYSTYLE")
                (:default "NUMBERSTYLE"))))
 
-  (defun format-number (value &key locale style)
-    (let ((fmt (%jstatic "getInstance" "com.ibm.icu.text.NumberFormat"
-                         (%locale locale) (%number-style (or style :decimal)))))
-      (%jstr (%jcall "format" fmt (float value 1d0)))))
+  (defun format-number (value &key locale style skeleton)
+    (if (and skeleton (plusp (length (string skeleton))))
+        (let* ((nf (%jcall "locale"
+                           (%jstatic "forSkeleton" "com.ibm.icu.number.NumberFormatter"
+                                     (string skeleton))
+                           (%locale locale)))
+               (fv (%jcall "format" nf (float value 1d0))))
+          (%jstr (%jcall "toString" fv)))
+        (let ((fmt (%jstatic "getInstance" "com.ibm.icu.text.NumberFormat"
+                             (%locale locale) (%number-style (or style :decimal)))))
+          (%jstr (%jcall "format" fmt (float value 1d0))))))
 
-  (defun format-percent (value &key locale)
-    (let ((fmt (%jstatic "getPercentInstance" "com.ibm.icu.text.NumberFormat"
-                         (%locale locale))))
-      (%jstr (%jcall "format" fmt (float value 1d0)))))
+  (defun format-percent (value &key locale skeleton)
+    (if (and skeleton (plusp (length (string skeleton))))
+        (format-number value :locale locale :skeleton skeleton)
+        (let ((fmt (%jstatic "getPercentInstance" "com.ibm.icu.text.NumberFormat"
+                             (%locale locale))))
+          (%jstr (%jcall "format" fmt (float value 1d0))))))
 
-  (defun format-currency (value currency &key locale)
-    (let* ((fmt (%jstatic "getCurrencyInstance" "com.ibm.icu.text.NumberFormat"
-                          (%locale locale)))
-           (cur (%jstatic "getInstance" "com.ibm.icu.util.Currency" (string currency))))
-      (%jcall "setCurrency" fmt cur)
-      (%jstr (%jcall "format" fmt (float value 1d0)))))
+  (defun format-currency (value currency &key locale skeleton)
+    (if (and skeleton (plusp (length (string skeleton))))
+        (format-number value :locale locale :skeleton skeleton)
+        (let* ((fmt (%jstatic "getCurrencyInstance" "com.ibm.icu.text.NumberFormat"
+                              (%locale locale)))
+               (cur (%jstatic "getInstance" "com.ibm.icu.util.Currency" (string currency))))
+          (%jcall "setCurrency" fmt cur)
+          (%jstr (%jcall "format" fmt (float value 1d0))))))
 
   (defun parse-number (string &key locale style)
     (let* ((fmt (%jstatic "getInstance" "com.ibm.icu.text.NumberFormat"
@@ -93,25 +104,34 @@
                (* (float value 1d0) 1000d0)))
           (t 0d0)))
 
-  (defun format-date (value &key locale style)
-    (let* ((fmt (%jstatic "getDateInstance" "com.ibm.icu.text.DateFormat"
-                          (%date-style style) (%locale locale)))
-           (d (%jnew "java.util.Date" (round (%udate-ms value)))))
-      (%jstr (%jcall "format" fmt d))))
+  (defun format-date (value &key locale style skeleton)
+    (if (and skeleton (plusp (length (string skeleton))))
+        (let* ((fmt (%jstatic "getInstanceForSkeleton" "com.ibm.icu.text.DateFormat"
+                              (string skeleton) (%locale locale)))
+               (d (%jnew "java.util.Date" (round (%udate-ms value)))))
+          (%jstr (%jcall "format" fmt d)))
+        (let* ((fmt (%jstatic "getDateInstance" "com.ibm.icu.text.DateFormat"
+                              (%date-style style) (%locale locale)))
+               (d (%jnew "java.util.Date" (round (%udate-ms value)))))
+          (%jstr (%jcall "format" fmt d)))))
 
-  (defun format-time (value &key locale style)
-    (let* ((fmt (%jstatic "getTimeInstance" "com.ibm.icu.text.DateFormat"
-                          (%date-style (or style :short)) (%locale locale)))
-           (d (%jnew "java.util.Date" (round (%udate-ms value)))))
-      (%jstr (%jcall "format" fmt d))))
+  (defun format-time (value &key locale style skeleton)
+    (if (and skeleton (plusp (length (string skeleton))))
+        (format-date value :locale locale :skeleton skeleton)
+        (let* ((fmt (%jstatic "getTimeInstance" "com.ibm.icu.text.DateFormat"
+                              (%date-style (or style :short)) (%locale locale)))
+               (d (%jnew "java.util.Date" (round (%udate-ms value)))))
+          (%jstr (%jcall "format" fmt d)))))
 
-  (defun format-datetime (value &key locale date-style time-style)
-    (let* ((fmt (%jstatic "getDateTimeInstance" "com.ibm.icu.text.DateFormat"
-                          (%date-style (or date-style :short))
-                          (%date-style (or time-style :short))
-                          (%locale locale)))
-           (d (%jnew "java.util.Date" (round (%udate-ms value)))))
-      (%jstr (%jcall "format" fmt d))))
+  (defun format-datetime (value &key locale date-style time-style skeleton)
+    (if (and skeleton (plusp (length (string skeleton))))
+        (format-date value :locale locale :skeleton skeleton)
+        (let* ((fmt (%jstatic "getDateTimeInstance" "com.ibm.icu.text.DateFormat"
+                              (%date-style (or date-style :short))
+                              (%date-style (or time-style :short))
+                              (%locale locale)))
+               (d (%jnew "java.util.Date" (round (%udate-ms value)))))
+          (%jstr (%jcall "format" fmt d)))))
 
   (defun parse-date (string &key locale style)
     "Parse STRING → universal-time seconds (float). STYLE defaults :short."
