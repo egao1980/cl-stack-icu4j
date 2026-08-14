@@ -27,10 +27,17 @@
   (defun locale-tag (uloc) (%jstr (%jcall "toLanguageTag" uloc)))
 
   (defun available-locale-tags ()
-    (let* ((arr (%jstatic "getAvailableLocales" "com.ibm.icu.util.ULocale"))
-           (n (java:jarray-length arr)))
-      (loop for i below n
-            collect (%jstr (%jcall "toLanguageTag" (java:jarray-ref arr i))))))
+    "Return BCP 47 tags for ICU4J available ULocales.
+ABCL may return a Lisp vector of Java objects rather than a Java array."
+    (let ((arr (%jstatic "getAvailableLocales" "com.ibm.icu.util.ULocale")))
+      (flet ((ref (i)
+               (cond ((typep arr 'sequence) (elt arr i))
+                     (t (java:jarray-ref arr i))))
+             (len ()
+               (cond ((typep arr 'sequence) (length arr))
+                     (t (java:jarray-length arr)))))
+        (loop for i below (len)
+              collect (%jstr (%jcall "toLanguageTag" (ref i)))))))
 
   (defun %args→jmap (arguments)
     (let ((m (%jnew "java.util.HashMap")))

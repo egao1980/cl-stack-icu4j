@@ -69,9 +69,12 @@
       (unless (minusp cp) cp)))
 
   (defun numeric-value (code-point)
-    (let ((v (%jstatic "getNumericValue" "com.ibm.icu.lang.UCharacter" code-point)))
-      ;; ICU: -1 / -2 mean none; Java getNumericValue uses -1 for none for some cps
-      (unless (minusp v) (float v 1d0))))
+    "Unicode Numeric_Value (fractions etc). NIL when unset.
+Uses UCharacter.getUnicodeNumericValue (not Java-style getNumericValue)."
+    (let ((v (%jstatic "getUnicodeNumericValue" "com.ibm.icu.lang.UCharacter" code-point)))
+      ;; U_NO_NUMERIC_VALUE == -123456789.0 in ICU
+      (unless (= v -123456789d0)
+        (float v 1d0))))
 
   (defun digit-value (code-point &key (radix 10))
     (let ((v (%jstatic "digit" "com.ibm.icu.lang.UCharacter" code-point radix)))
@@ -242,10 +245,10 @@
     (%jfield "com.ibm.icu.text.UnicodeSet$SpanCondition"
              (if contained "CONTAINED" "NOT_CONTAINED")))
 
-  (defun uset-span (set string &key contained)
+  (defun uset-span (set string &key (contained t))
     (%jcall "span" set (string string) (%span-condition contained)))
 
-  (defun uset-span-back (set string &key contained)
+  (defun uset-span-back (set string &key (contained t))
     (%jcall "spanBack" set (string string) (%span-condition contained)))
 
   (defun uset-size (set) (%jcall "size" set))

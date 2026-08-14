@@ -1,5 +1,5 @@
 (defsystem "cl-stack-icu4j"
-  :version "78.1"
+  :version "78.1.1"
   :description "ICU4J (78.1) Java interop for ABCL — classpath bootstrap + Lisp API"
   :author "egao1980"
   :license "MIT"
