@@ -14,7 +14,7 @@
                (:file "l10n"))
   :in-order-to ((test-op (test-op "cl-stack-icu4j/tests")))
   :properties
-  (:cl-repo (:provides ("cl-stack-icu4j"))))
+  (:cl-repo (:provides ("cl-stack-icu4j") :ci (:sources (("rove" :ql))))))
 
 (defsystem "cl-stack-icu4j/tests"
   :depends-on ("cl-stack-icu4j" "rove")
