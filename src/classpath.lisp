@@ -8,7 +8,7 @@
           +icu4j-version+ +icu4j-version+))
 
 (defparameter *icu4j-sha256*
-  "bbb70d3be23110d7295823eee0c2e896ac3b619b3c0f26168f65eb972df51d2a")
+  "28b292e60d0d00c496bae88a15b2615f89f781be13670aeac9dc90f189570e07")
 
 (defvar *icu4j-loaded* nil)
 

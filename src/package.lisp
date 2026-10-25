@@ -91,7 +91,7 @@
 
 (in-package #:cl-stack-icu4j)
 
-(defconstant +icu4j-version+ "78.1"
+(defconstant +icu4j-version+ "79.1"
   "Pinned ICU4J Maven artifact version (aligns with cl-stack-icu ICU sources).")
 
 (define-condition icu4j-error (error)

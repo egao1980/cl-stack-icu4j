@@ -11,7 +11,7 @@
 (progn
   (deftest bootstrap
     (ok (ensure-icu4j))
-    (ok (search "78." (icu4j-version-string))))
+    (ok (search "79." (icu4j-version-string))))
 
   ;;; --- unicode --------------------------------------------------------------
 

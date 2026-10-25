@@ -51,9 +51,9 @@ jobs:
         shell: bash
         run: |
           mkdir -p lib
-          curl -fsSL -o lib/icu4j-78.1.jar \
-            https://repo1.maven.org/maven2/com/ibm/icu/icu4j/78.1/icu4j-78.1.jar
-          echo "bbb70d3be23110d7295823eee0c2e896ac3b619b3c0f26168f65eb972df51d2a  lib/icu4j-78.1.jar" | sha256sum -c -
+          curl -fsSL -o lib/icu4j-79.1.jar \
+            https://repo1.maven.org/maven2/com/ibm/icu/icu4j/79.1/icu4j-79.1.jar
+          echo "28b292e60d0d00c496bae88a15b2615f89f781be13670aeac9dc90f189570e07  lib/icu4j-79.1.jar" | sha256sum -c -
       - uses: egao1980/cl-repository/.github/actions/ci@main
         with:
           phase: install
