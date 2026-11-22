@@ -16,3 +16,18 @@ Consumers: `unicode-backend-icu4j`, `i18n-backend-icu4j`, `l10n-backend-icu4j`.
 ```
 
 Non-ABCL loads stubs that error if called.
+
+## Jar verification
+
+Every resolved jar (`CL_STACK_ICU4J_JAR`, `lib/`, cache, fresh download) is hashed with SHA-256 through `crypto-protocol` (`crypto-backend-ironclad`) and compared with the pinned digest before it reaches the classpath. A download is written to a temporary file and only renamed into the cache after it verifies.
+
+A mismatch signals `icu4j-checksum-mismatch` (an `icu4j-error`). Nothing continues past it unless a handler invokes the restart `use-unverified-jar`, the one explicit override for a jar you trust anyway:
+
+```lisp
+(handler-bind ((cl-stack-icu4j:icu4j-checksum-mismatch
+                 (lambda (c) (declare (ignore c))
+                   (invoke-restart (quote cl-stack-icu4j:use-unverified-jar)))))
+  (cl-stack-icu4j:ensure-icu4j))
+```
+
+`(verify-icu4j-jar path &key expected)` runs the same check on any file.

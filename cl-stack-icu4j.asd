@@ -1,9 +1,9 @@
 (defsystem "cl-stack-icu4j"
-  :version "79.1.0"
+  :version "79.1.1"
   :description "ICU4J (79.1) Java interop for ABCL — classpath bootstrap + Lisp API"
   :author "egao1980"
   :license "MIT"
-  :depends-on ("uiop")
+  :depends-on ("uiop" "crypto-protocol" "crypto-backend-ironclad" "encoding-protocol")
   :serial t
   :pathname "src"
   :components ((:file "package")
@@ -21,6 +21,7 @@
   :pathname "tests"
   :serial t
   :components ((:file "package")
+               (:file "checksum-test")
                (:file "smoke-test"))
   :perform (test-op (o c)
              (unless (symbol-call :rove :run c)
