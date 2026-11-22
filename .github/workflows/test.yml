@@ -12,6 +12,9 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
+  # SBCL on Linux, macOS, Windows: jar checksum tests (the ICU4J API itself is ABCL-only).
+  test:
+    uses: egao1980/cl-repository/.github/workflows/test-system.yml@main
 
   test-abcl:
     runs-on: ubuntu-latest
